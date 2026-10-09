@@ -1,0 +1,30 @@
+# ===== 密钥与本地配置（绝对不能提交）=====
+.env
+*.env
+.env.*
+secrets.json
+*secret*
+*credential*
+
+# ===== 运行时生成的数据（含聊天记录，属于隐私）=====
+history/
+*.wav
+
+# ===== Python =====
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+build/
+dist/
+*.egg-info/
+.venv/
+venv/
+env/
+
+# ===== 编辑器 / 系统 =====
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db

@@ -1,0 +1,56 @@
+import os
+import signal
+import time
+import Jetson.GPIO as GPIO
+
+# ========== 1. 彻底终止运行中的代码进程 ==========
+print("步骤1：正在终止代码进程...")
+_current_pgid = 12345  # 示例进程组ID，实际使用时需替换
+try:
+    os.killpg(_current_pgid, signal.SIGTERM)
+    time.sleep(0.5)
+    try:
+        os.killpg(_current_pgid, 0)
+        os.killpg(_current_pgid, signal.SIGKILL)
+        time.sleep(0.2)
+        print("进程已强制终止")
+    except ProcessLookupError:
+        print("进程已正常退出")
+except ProcessLookupError:
+    print("进程组不存在，跳过终止步骤")
+except Exception as e:
+    print(f"进程终止提示: {str(e)}")
+
+# ========== 2. 正确的高阻态设置流程 ==========
+print("\n步骤2：正在安全重置GPIO为高阻态...")
+used_pins = [7, 11, 12, 13]  # 示例引脚列表，实际使用时需替换
+print(f"需要重置的引脚列表: {used_pins}")
+
+try:
+    GPIO.setwarnings(False)
+    GPIO.setmode(GPIO.BOARD)
+
+    # 正确方法：直接设置为输入模式+下拉电阻（一步到位）
+    print("正在设置引脚为输入模式+下拉电阻（高阻态）...")
+    for pin in used_pins:
+        GPIO.setup(pin, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
+        time.sleep(0.01)
+        print(f"✓ 引脚 {pin} 已进入高阻态（输入模式+下拉，电平稳定在0V）")
+
+    # 【关键】绝对不要调用 GPIO.cleanup()
+    # cleanup() 的行为依赖库版本，可能破坏高阻态设置
+    # 进程退出后内核会自动释放资源
+
+    print("\n✓ 所有安全操作完成！")
+    print("所有引脚均已设置为高阻态（输入模式+下拉电阻）")
+    print("硬件已处于完全安全状态")
+    
+    # 验证方法提示
+    print("\n验证方法：")
+    print("1. 用万用表测量引脚电压：应约0V")
+    print("2. 用导线短接引脚和3.3V：LED会瞬间亮（证明是输入模式）")
+    print("3. 移除短接线：LED立即熄灭（证明下拉电阻生效）")
+
+except Exception as e:
+    print(f"\n✗ GPIO清理异常: {str(e)}")
+    print("执行完成：进程已终止，GPIO已尝试清理")
